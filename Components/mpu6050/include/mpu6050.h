@@ -18,7 +18,9 @@ typedef struct {
     // converted values
     float accel_x_g, accel_y_g, accel_z_g;      // in gs
     float accel_x_ms2, accel_y_ms2, accel_z_ms2; // in m/s²
+
     float gyro_x_dps, gyro_y_dps, gyro_z_dps;    // in °/s
+    
     float pitch_g, roll_g, yaw_g;
     float pitch, roll, yaw;
 

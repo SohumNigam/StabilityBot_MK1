@@ -186,7 +186,7 @@ esp_err_t mpu6050_read_converted(i2c_port_t i2c_num, mpu6050_data_t *data, float
     float pitch_a = atan2f(-data->accel_x_g, sqrtf(data->accel_y_g * data->accel_y_g + data->accel_z_g * data->accel_z_g)) * RAD_TO_DEG;
 
     // Complementary filter fusion
-    const float alpha = 0.8f; // gyro weight
+    const float alpha = 0.92f; // gyro weight
     data->pitch_g += data->gyro_y_dps * dt;
     data->roll_g  += data->gyro_x_dps * dt;
     data->yaw_g   += data->gyro_z_dps * dt;
