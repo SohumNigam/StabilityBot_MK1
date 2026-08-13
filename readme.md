@@ -1,75 +1,105 @@
-# Stability Bot MK1
+# StabilityBot MK1
+
 *Currently in prototype phase*
 
-Classic 2-wheeled robot stabilised with PID IMU feedback.
+A self-balancing two-wheeled robot — an inverted pendulum stabilized
+by IMU feedback and PID motor control, being built up toward full
+4-state LQR control on a custom PCB.
 
-## Showcase
-Webpage coming soon at:
-https://sohumnigam.github.io
+**Full write-up / showcase:**
+[sohumnigam.github.io/projects/stability_bot_MK1.html](https://sohumnigam.github.io/projects/stability_bot_MK1.html)
 
+## Why I built this
 
-# Current features
-- Reactive motor response
-- IMU sensor fusion
-- PID
+I wanted a project that went past the usual "balance a robot with a
+PID loop" hobby build — something that let me go deep on control
+theory (state-space modeling, LQR, Kalman filtering), embedded
+firmware, and PCB design all at once, and end up with a portfolio
+piece that shows that depth rather than just a demo video. The
+long-term goal is a robot that balances using a full 4-state LQR
+controller (θ, θ̇, x, ẋ) on hardware I designed myself, with a
+classical-vs-learned comparison against a reinforcement learning
+controller down the line.
 
+## Photos
 
-## Hardware Overview & Potential Future Upgrades
-- ESP32 Devboard --> Custom PCB
-- MPU6050 IMU module --> BOSCH BMI320
-- L293D dual H-Bridge motor driver
-- Standard yellow DC geared motors
-- ELEGOO Battery Pack --> High discharge lipo + Boost converter
-- 3D printed chassis
+<!-- TODO: add these before submission -->
+- [ ] Full assembly photo(s)
+- [ ] PCB photo (once fabbed)
+- [ ] Schematic screenshot
+- [ ] Wiring diagram for current breadboard/soldered prototype
+
+## Current Features
+
+- Active motor balancing response
+- IMU sensor fusion (complementary filter, Kalman filter in progress)
+- PID control loop
+- Live web dashboard (WebSocket telemetry: pitch, motor output, PID
+  tuning sliders) served from the ESP32 in SoftAP mode
+
+## Hardware Overview
+
+| Component | Current | Planned Upgrade |
+|---|---|---|
+| Compute | ESP32 Devboard | Custom ESP32-S3 PCB |
+| IMU | MPU6050 | Bosch BMI320 (SPI) |
+| Motor driver | L293D | TB6612FNG |
+| Motors | Standard yellow DC geared motors | — |
+| Battery | ELEGOO battery pack | High-discharge 2S LiPo |
+| Chassis | 3D printed | — |
+| Encoders | None | AS5600 / AS5600L (for 4-state LQR) |
 
 ## Software Overview
 
-### FreeRTOS control task
+**FreeRTOS control task**
 - IMU readings
-- PID calculations
+- PID calculations (LQR planned once encoders are integrated)
 - Motor PWM control
 
-### FreeRTOS Web interface handler (Not implemented yet)
+**FreeRTOS web interface task**
 - Digital logging
 - Mobile control
-- Remote tuning
+- Remote PID tuning
 
-## Quick Start
-- Clone the project to yout ESP-IDF project directory
-- Wire the ESP32 and other components to match the code
-- Flash and potentially tune PID if needed
+## How to Assemble
 
+<!-- TODO: fill in with real steps once chassis/wiring is finalized -->
+1. 3D print the chassis (files: `/cad`)
+2. Mount motors and wheels
+3. Wire IMU, motor driver, and battery to the ESP32 per the wiring
+   diagram above
+4. Secure battery pack and IMU to minimize vibration noise
 
+## How to Flash
 
+1. Clone this repo into your ESP-IDF project directory
+2. Confirm your wiring matches the pin assignments in `main/`
+3. Build and flash with `idf.py build flash monitor`
+4. Connect to the robot's WebSocket dashboard to tune PID live
 
+## Bill of Materials
 
+<!-- TODO: fill in real part numbers, sources, and costs -->
+| Part | Qty | Source | Cost |
+|---|---|---|---|
+| ESP32 Devboard | 1 | | |
+| MPU6050 | 1 | | |
+| L293D | 1 | | |
+| DC geared motors | 2 | | |
+| Battery pack | 1 | | |
+| 3D printed chassis | 1 | | |
 
-# Dev Log
+## Known Issues
 
-## Short summary of development before logging began:
+- IMU signal occasionally drops out on the current breadboard
+  prototype — traced to noise from jumper wire connections; largely
+  mitigated with twisted GND pairs and a control-loop delay, but not
+  fully eliminated. Root fix is the move to a soldered BMI320 board
+  and eventually the custom PCB.
+- 4-state LQR not yet running on hardware — pending encoder
+  integration.
 
-- Initial concept with basic IMU --> motor response firmware (No PID, no testing body)
-- First major bug: ESP32 boot-loop due to noise on boot GPIO pin #14 --> solved by migrating motor control to pin 25
-- Rapid iterative design of initial testing chassis in onshape
-- Initial full assembly of the robot
+## Credits
 
-
-## 06/10/2026:
-Goal: Gather initial test results before upgrading to more reliable harware
-
-- conducted initial balancing test and attempted to tune PID
-- MPU6050 sensor signal repeatedly cut out
-- caused laggy intermitent motor response
-- impossible to tune and balance
-
-Suspected cause: Current breadboard connection prototype and jumper wire connections introduce mechanical and electrical noise causing signal drops
-
-Next step: Design and order BMI320 breakout board and solder connections to ESP32 to eliminate testing noise
-
-## 06/14/2026
-Goal: Investigate what can be done to minimze noise with the current setup with intent to optimize the future design even after harware changes.
-
-- Twisted signal wires with GND to reduce noise
-- Tuned complementary filter to smoothe angle estimate
-
-Both changes lowered high frequency noise and smoothed robot motion. Signal dropouts still persist further suppourting the need for a custom PCB.
+<!-- TODO: list any open-source firmware, libraries, or references used -->
+- Built on [ESP-IDF](https://github.com/espressif/esp-idf) (Espressif)

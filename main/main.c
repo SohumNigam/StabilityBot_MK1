@@ -40,7 +40,7 @@ void wifi_init_softap(void) {
     esp_wifi_set_mode(WIFI_MODE_AP);
     esp_wifi_set_config(WIFI_IF_AP, &ap_config);
     esp_wifi_start();
-    // Connect to http://192.168.4.1 on your phone/laptop
+    // Connect to http://192.168.4.1 on your phone/laptop to see telemetry data
 }
 
 
@@ -211,6 +211,8 @@ void control_task(void *arg){
             xSemaphoreGive(g_telemetry_mutex);
         }
     
+        vTaskDelay(pdMS_TO_TICKS(10));
+
     }
 }
 
