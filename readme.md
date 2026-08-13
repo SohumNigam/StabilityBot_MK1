@@ -23,11 +23,9 @@ controller down the line.
 
 ## Photos
 
-<!-- TODO: add these before submission -->
-- [ ] Full assembly photo(s)
-- [ ] PCB photo (once fabbed)
-- [ ] Schematic screenshot
-- [ ] Wiring diagram for current breadboard/soldered prototype
+
+![alt text](Assets/PXL_20260614_190938876.jpg)
+![alt text](Assets/PXL_20260625_170037840.jpg)
 
 ## Current Features
 
@@ -64,11 +62,10 @@ controller down the line.
 ## How to Assemble
 
 <!-- TODO: fill in with real steps once chassis/wiring is finalized -->
-1. 3D print the chassis (files: `/cad`)
-2. Mount motors and wheels
-3. Wire IMU, motor driver, and battery to the ESP32 per the wiring
-   diagram above
-4. Secure battery pack and IMU to minimize vibration noise
+1. 3D print the chassis (files: hardware/cad/step)
+2. Mount motors and wheels using the screws that come with the yellow motors
+3. Wire IMU, motor driver, and battery to the ESP32 per the defined pins in main.c (you will need to look in the motor structs for them)
+4. Secure battery pack and IMU to minimize vibration noise. I used hot glue for this version. (I promise ill make it better soon)
 
 ## How to Flash
 
@@ -79,7 +76,6 @@ controller down the line.
 
 ## Bill of Materials
 
-<!-- TODO: fill in real part numbers, sources, and costs -->
 | Part | Qty | Source | Cost |
 |---|---|---|---|
 | ESP32 Devboard | 1 | | |

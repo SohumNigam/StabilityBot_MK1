@@ -20,15 +20,18 @@
 **/build/
 build/
 *.o
+*.d
 *.a
 *.out
-*.exe # For any host-side utilities compiled on Windows
+# For any host-side utilities compiled on Windows
+*.exe
 
 # ESP-IDF specific build outputs
 *.bin
 *.elf
 *.map
-flasher_args.json # Generated in build directory
+# Generated in build directory
+flasher_args.json
 sdkconfig.old
 sdkconfig
 
@@ -54,12 +57,22 @@ CTestTestfile.cmake
 *.pyd
 __pycache__/
 *.egg-info/
+*.egg
+.eggs/
 dist/
 
 # Virtual environment folders
 venv/
 .venv/
 env/
+
+# Python tooling caches
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.env.local
 
 # Language Servers
 .clangd/
@@ -73,6 +86,46 @@ Desktop.ini
 
 # User-specific configuration files
 *.user
-*.workspace # General workspace files, can be from various tools
-*.suo       # Visual Studio Solution User Options
-*.sln.docstates # Visual Studio
+# General workspace files, can be from various tools
+*.workspace
+# Visual Studio Solution User Options
+*.suo
+*.sln.docstates
+
+# ============================
+# KiCad
+# ============================
+*.kicad_pcb-bak
+*.kicad_sch-bak
+_autosave-*
+fp-info-cache
+*.000
+*.ratsnest
+**/*.lck
+sym-lib-table.bak
+fp-lib-table.bak
+**/*-backups/
+
+# ============================
+# CAD (Onshape STEP exports etc.)
+# ============================
+*.step.bak
+*.stl.bak
+**/cad/**/*.tmp
+
+# ============================
+# RL training artifacts (Stable-Baselines3, future track)
+# ============================
+**/logs/
+**/tensorboard/
+**/checkpoints/
+*.zip
+!hardware/pcb/fab-outputs/**/*.zip
+
+# ============================
+# Editor
+# ============================
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
