@@ -26,6 +26,8 @@ controller down the line.
 
 ![alt text](Assets/PXL_20260614_190938876.jpg)
 ![alt text](Assets/PXL_20260625_170037840.jpg)
+![alt text](Assets/image-7.png)
+![alt text](Assets/image-8.png)
 
 ## Current Features
 
