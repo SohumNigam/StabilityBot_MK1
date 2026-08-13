@@ -61,6 +61,7 @@ after:
 # June 20: Chasing a software cause for signal dropout
 
 Goal: investigate potential software causes for signal dropout.
+![signal dropout](Assets/image-1.png)
 
 - Disabled the motors
 - Printed IMU readings to the serial console for debugging
