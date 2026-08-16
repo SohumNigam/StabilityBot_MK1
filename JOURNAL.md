@@ -130,8 +130,6 @@ Was a pain but I found the exact model of the esp32 board I used without even ha
 
 With this newfound knowledge, I started finalising the Schematic now that parts are confirmed (just not passive components yet). Super messy rign now will make sure to do LOTS of double checking because I rlly want this to work first try or I might not finish the project in time.
 
-~~~~~~~~~~~~~~~~~~~~~~~
-
 Finalized the schematic!
 
 ![alt text](Assets/image-11.png)
