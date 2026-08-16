@@ -1,0 +1,16 @@
+Category,Qty,Part,Value,LCSC Part number,Price/unit,Extended description,Link
+Compute,1,ESP32 WROVER DevKitC,Espressif ESP32-WROVER-DevKitC,,,Purchased from digikey ,https://www.digikey.com/en/products/detail/espressif-systems/ESP32-DEVKITC-VIE/12091811
+IMU,1,BMI320 IMU,Bosch BMI320,C22391148,$0.99,SPI IMU,https://www.lcsc.com/product-detail/C22391148.html?spm=wm.ddx.0.xqy___wm.ddl.ddb.1.ddh&lcsc_vid=TlgPUl1SRQJdVVIHTlZeVFVVQwcNUwZRRVVdUlRQFlMxVlNeQVlWV1JQQFNXUTtW
+Passive,2,Capacitor,100nf,,,,
+Encoder,1,AS5600 Magnetic Encoder,AMS AS5600,C499458,$ 1.1855,For wheel pos tracking,https://www.lcsc.com/product-detail/C499458.html?spm=wm.gwc.xh.1.cbm___wm.sy.ssl.gwc&lcsc_vid=TlgPUl1SRQJdVVIHTlZeVFVVQwcNUwZRRVVdUlRQFlMxVlNeQVlWV1JQQFNXUTtW
+Motor Driver,1,TB6612FNG Motor Driver,Toshiba TB6612FNG,C141517,$ 1.1659,Target PCB driver; STBY tied to GPIO (to purchase),https://www.lcsc.com/product-detail/C141517.html?spm=wm.gwc.xh.0.cbm___wm.sy.ssl.gwc&lcsc_vid=TlgPUl1SRQJdVVIHTlZeVFVVQwcNUwZRRVVdUlRQFlMxVlNeQVlWV1JQQFNXUTtW
+Power,1,LDO Regulator,TBD (Probably  AMS1117),,,3.3V LDO for PCB (to purchase),
+Mechanical,2,DC Gear Motors,,,,Confirm specs - voltage/RPM/torque (owned),
+Mechanical,2,Wheels,Included with motors,,,Owned,
+Mechanical,1,Chassis / Frame (custom),,,,Onshape CAD; STEP in hardware/cad/step/,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,TOTAL COST,Sum of (Qty x Price/unit) across all rows,

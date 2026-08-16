@@ -112,7 +112,36 @@ Motor driver
 
 
 Will move on to finalizing and reviweing connections. The start routing the final PCB.
-Next steps will be to also finalize magnetic rotary encoder PCB and implement a cad mounting solution. To actually enable Full 4 state LQR control.
+Next steps will be to also finalize magnetic rotary encoder PCB and implement a cad mounting solution. To actually enable Full 4 state LQR control. I have high hpes for the stability of the final robot. Should be significantly more effective than PID.
 
 **Total time spent: 1 hours**
 
+
+# Aug 16: Putting together a tentative BOM.
+
+While the project is still in progress and not all parts are finalized, I still chose to put together a rough BOM to start to have an idea of what is pending and what can move forward.
+
+![alt text](Assets/image-9.png)
+
+
+Was a pain but I found the exact model of the esp32 board I used without even having it on me (Im on vacation) for the PCB. Also has been added to BOM
+
+![alt text](Assets/image-10.png)
+
+With this newfound knowledge, I started finalising the Schematic now that parts are confirmed (just not passive components yet). Super messy rign now will make sure to do LOTS of double checking because I rlly want this to work first try or I might not finish the project in time.
+
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Finalized the schematic!
+
+![alt text](Assets/image-11.png)
+
+Still needs to be revieved and double checked but should be moving on the layout in a day or 2.
+
+Also finished encoder PCB design.
+
+![alt text](Assets/image-12.png)
+![alt text](Assets/image-13.png)
+
+
+**Total time spent: 2 hours**

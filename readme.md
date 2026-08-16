@@ -67,7 +67,7 @@ controller down the line.
 1. 3D print the chassis (files: hardware/cad/step)
 2. Mount motors and wheels using the screws that come with the yellow motors
 3. Wire IMU, motor driver, and battery to the ESP32 per the defined pins in main.c (you will need to look in the motor structs for them)
-4. Secure battery pack and IMU to minimize vibration noise. I used hot glue for this version. (I promise ill make it better soon)
+4. Secure battery pack and IMU to minimize vibration noise. I used hot glue for this version.
 
 ## How to Flash
 
@@ -78,14 +78,7 @@ controller down the line.
 
 ## Bill of Materials
 
-| Part | Qty | Source | Cost |
-|---|---|---|---|
-| ESP32 Devboard | 1 | | |
-| MPU6050 | 1 | | |
-| L293D | 1 | | |
-| DC geared motors | 2 | | |
-| Battery pack | 1 | | |
-| 3D printed chassis | 1 | | |
+See the BOM.csv. Still a work in progress as some parts are not yet finalized.
 
 ## Known Issues
 
@@ -99,5 +92,4 @@ controller down the line.
 
 ## Credits
 
-<!-- TODO: list any open-source firmware, libraries, or references used -->
 - Built on [ESP-IDF](https://github.com/espressif/esp-idf) (Espressif)
