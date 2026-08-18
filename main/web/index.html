@@ -4,709 +4,236 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>StabilityBot MK1</title>
-
 <style>
-  /* ======================================================================
-     DESIGN TOKENS
-     All colors, fonts, and shared values live here as CSS variables so
-     the rest of the stylesheet never hardcodes a color directly.
-     ====================================================================== */
   :root {
-    /* Backgrounds */
-    --bg: #0d0d0f;            /* page background */
-    --surface: #16161a;       /* card background */
-    --surface2: #1e1e24;      /* nested / recessed surface (tracks, inputs) */
-    --border: rgba(255,255,255,0.07);
-
-    /* Text */
-    --text: #f0f0f2;
-    --muted: #6b6b78;
-
-    /* Status / accent colors */
-    --accent: #4ade80;        /* green  = good / safe / connected */
-    --accent-dim: rgba(74,222,128,0.12);
-    --warn: #fb923c;          /* orange = warning */
-    --warn-dim: rgba(251,146,60,0.12);
-    --danger: #f87171;        /* red    = danger / disconnected */
-    --danger-dim: rgba(248,113,113,0.12);
-    --blue: #60a5fa;          /* used for P term + motor bar */
-    --blue-dim: rgba(96,165,250,0.12);
-    --purple: #a78bfa;        /* used for target-angle controls */
-
+    --bg: #0d0d0f; --surface: #16161a; --surface2: #1e1e24; --border: rgba(255,255,255,0.07);
+    --text: #f0f0f2; --muted: #6b6b78;
+    --accent: #4ade80; --accent-dim: rgba(74,222,128,0.12);
+    --warn: #fb923c; --danger: #f87171;
+    --blue: #60a5fa; --purple: #a78bfa;
     --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; font-size: 15px; }
 
-  /* Reset */
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 15px;
-    min-height: 100dvh;
-    overscroll-behavior: none; /* stop iOS rubber-band scroll from feeling glitchy */
-  }
+  .header { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .header-title { font-size: 15px; font-weight: 600; }
+  .header-sub { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+  .conn-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--font-mono);
+    padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border); }
+  .conn-badge.connected    { color: var(--accent); background: var(--accent-dim); }
+  .conn-badge.disconnected { color: var(--danger); background: rgba(248,113,113,0.12); }
+  .conn-badge.connecting   { color: var(--warn); background: rgba(251,146,60,0.12); }
 
-  /* ======================================================================
-     HEADER  (logo, title, ESP32 IP, connection badge)
-     ====================================================================== */
-  .header {
-    position: sticky; top: 0; z-index: 10;
-    background: rgba(13,13,15,0.92);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 20px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .header-left { display: flex; align-items: center; gap: 10px; }
-  .logo {
-    width: 32px; height: 32px;
-    background: var(--accent-dim);
-    border: 1px solid rgba(74,222,128,0.25);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .logo svg { width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .header-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-  .header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; font-family: var(--font-mono); } /* shows the ESP32 host/IP */
-
-  /* Connection status pill, top-right. Color + label swap based on WS state. */
-  .conn-badge {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px; font-family: var(--font-mono);
-    padding: 5px 10px; border-radius: 20px;
-    border: 1px solid var(--border); background: var(--surface);
-    transition: all 0.3s;
-  }
-  .conn-badge.connected    { color: var(--accent); border-color: rgba(74,222,128,0.3);  background: var(--accent-dim); }
-  .conn-badge.disconnected { color: var(--danger); border-color: rgba(248,113,113,0.3); background: var(--danger-dim); }
-  .conn-badge.connecting   { color: var(--warn);   border-color: rgba(251,146,60,0.3);  background: var(--warn-dim); }
-  .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-  .conn-badge.connected .conn-dot { animation: blink 2s infinite; } /* pulsing dot = "live" */
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-  /* ======================================================================
-     TABS  (Telemetry vs. PID Tuning)
-     ====================================================================== */
-  .tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-    position: sticky; top: 61px; z-index: 9; /* sits directly under the header */
-  }
-  .tab {
-    flex: 1; padding: 12px 8px; text-align: center;
-    font-size: 12px; font-family: var(--font-mono); color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.08em;
-    cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;
-    user-select: none;
-  }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); position: sticky; top: 53px; z-index: 9; background: var(--bg); }
+  .tab { flex: 1; padding: 10px 8px; text-align: center; font-size: 12px; font-family: var(--font-mono);
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer;
+    border-bottom: 2px solid transparent; }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
+  .content { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 
-  .content { padding: 16px 16px 32px; display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 6px; }
 
-  /* ======================================================================
-     TELEMETRY TAB — Pitch hero card (big angle readout + horizon slider)
-     ====================================================================== */
-  .pitch-hero {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    padding: 20px; position: relative; overflow: hidden;
-  }
-  /* soft glow decoration in the corner */
-  .pitch-hero::before {
-    content: ''; position: absolute; top: -40px; right: -40px;
-    width: 160px; height: 160px;
-    background: radial-gradient(circle, rgba(74,222,128,0.08) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .pitch-label { font-size: 11px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
-  .pitch-display { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; }
-  .pitch-value { font-size: 64px; font-weight: 700; font-family: var(--font-mono); letter-spacing: -0.04em; line-height: 1; transition: color 0.3s; }
-  /* Color-coded by how far off-balance the robot is (set dynamically in JS via `cls`) */
+  .pitch-value { font-size: 44px; font-weight: 700; font-family: var(--font-mono); }
   .pitch-value.safe   { color: var(--accent); }
   .pitch-value.warn   { color: var(--warn); }
   .pitch-value.danger { color: var(--danger); }
-  .pitch-unit { font-size: 22px; color: var(--muted); margin-bottom: 8px; font-family: var(--font-mono); }
 
-  /* "Horizon" bar: a -70° to +70° range with a moving thumb representing live pitch */
-  .horizon-wrap { position: relative; height: 48px; }
-  .horizon-track { position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: var(--surface2); border-radius: 1px; transform: translateY(-50%); }
-  .horizon-fill  { position: absolute; top: 50%; height: 2px; border-radius: 1px; transition: all 0.1s; transform: translateY(-50%); } /* fills from center to thumb */
-  .horizon-thumb {
-    position: absolute; top: 50%; width: 4px; height: 28px; border-radius: 2px;
-    background: var(--accent); transform: translate(-50%, -50%);
-    transition: left 0.1s, background 0.3s;
-    box-shadow: 0 0 8px rgba(74,222,128,0.4);
-  }
-  .horizon-thumb.warn   { background: var(--warn);   box-shadow: 0 0 8px rgba(251,146,60,0.4); }
-  .horizon-thumb.danger { background: var(--danger); box-shadow: 0 0 8px rgba(248,113,113,0.4); }
-  .horizon-labels { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
-  .horizon-labels span { font-size: 10px; font-family: var(--font-mono); color: var(--muted); }
-
-  /* ======================================================================
-     TELEMETRY TAB — 2x2 stat grid (error, motor speed, PID output, packets)
-     ====================================================================== */
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-  .stat-card-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
-  .stat-card-value { font-size: 26px; font-weight: 600; font-family: var(--font-mono); letter-spacing: -0.03em; line-height: 1; color: var(--text); }
-  .stat-card-unit { font-size: 12px; color: var(--muted); margin-left: 2px; }
-  .stat-card-sub { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: var(--font-mono); }
+  .stat-val { font-size: 22px; font-weight: 600; font-family: var(--font-mono); }
+  .stat-unit { font-size: 12px; color: var(--muted); }
 
-  /* Motor speed bar: fills left (reverse) or right (forward) from a center zero-point */
-  .motor-bar-track { height: 3px; background: var(--surface2); border-radius: 2px; margin-top: 8px; overflow: visible; position: relative; }
-  .motor-bar-fill { position: absolute; top: 0; height: 3px; border-radius: 2px; background: var(--blue); transition: width 0.1s, left 0.1s; }
-  .motor-zero { position: absolute; top: -3px; width: 1px; height: 9px; background: var(--border); left: 50%; } /* tick mark at 0 */
-
-  /* ======================================================================
-     TELEMETRY TAB — PID term bars (P / I / D contributions, bidirectional)
-     ====================================================================== */
-  .section-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; padding: 0 4px; }
-  .pid-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-  .pid-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); gap: 12px; }
+  .pid-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0;
+    border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 13px; }
   .pid-row:last-child { border-bottom: none; }
-  .pid-name { font-size: 11px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; width: 14px; flex-shrink: 0; }
-  .pid-bar-wrap { flex: 1; position: relative; height: 4px; background: var(--surface2); border-radius: 2px; }
-  .pid-bar-fill { position: absolute; top: 0; height: 4px; border-radius: 2px; transition: width 0.1s, left 0.1s; }
-  .pid-center { position: absolute; top: -4px; left: 50%; width: 1px; height: 12px; background: var(--border); } /* zero marker */
-  .pid-val { font-size: 13px; font-family: var(--font-mono); font-weight: 500; width: 52px; text-align: right; flex-shrink: 0; }
 
-  /* ======================================================================
-     TELEMETRY TAB — Pitch history sparkline chart
-     ====================================================================== */
-  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-  .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .chart-title { font-size: 11px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-  .chart-current { font-size: 13px; font-family: var(--font-mono); font-weight: 500; color: var(--accent); }
-  canvas.sparkline { width: 100%; height: 80px; display: block; } /* drawn manually in JS, see drawSparkline() */
+  .tuning-note { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
-  /* ======================================================================
-     TELEMETRY TAB — Robot tilt illustration + status text
-     ====================================================================== */
-  .robot-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 16px; }
-  .robot-viz { width: 80px; height: 80px; flex-shrink: 0; position: relative; display: flex; align-items: center; justify-content: center; }
-  .robot-ground { position: absolute; bottom: 8px; left: 0; right: 0; height: 1px; background: var(--border); }
-  .robot-svg-wrap { transform-origin: center bottom; transition: transform 0.12s ease-out; } /* rotated by JS to mirror live pitch */
-  .robot-info { flex: 1; }
-  .robot-status-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
-  .robot-status-value { font-size: 15px; font-weight: 600; transition: color 0.3s; }
-  .robot-status-value.safe   { color: var(--accent); }
-  .robot-status-value.warn   { color: var(--warn); }
-  .robot-status-value.danger { color: var(--danger); }
-  .robot-hint { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
-
-  /* ======================================================================
-     TELEMETRY TAB — Loop timing card (control loop dt, ms)
-     ====================================================================== */
-  .loop-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
-  .loop-left .loop-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-  .loop-left .loop-val { font-size: 22px; font-weight: 600; font-family: var(--font-mono); margin-top: 2px; }
-  .loop-left .loop-unit { font-size: 11px; color: var(--muted); }
-  .loop-bars { display: flex; align-items: flex-end; gap: 3px; height: 28px; } /* mini bar-graph of recent dt history */
-  .loop-bar { width: 5px; border-radius: 2px; background: var(--blue); opacity: 0.5; transition: height 0.1s; }
-  .loop-bar:last-child { opacity: 1; } /* highlight the most recent sample */
-
-  /* ======================================================================
-     PID TUNING TAB
-     ====================================================================== */
-  .tuning-hero { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; position: relative; overflow: hidden; }
-  .tuning-hero::before {
-    content: ''; position: absolute; top: -40px; right: -40px; width: 160px; height: 160px;
-    background: radial-gradient(circle, rgba(167,139,250,0.08) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .tuning-title { font-size: 11px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
-  .tuning-subtitle { font-size: 13px; color: var(--muted); line-height: 1.5; }
-
-  /* Card containing the P / I / D slider rows */
-  .pid-tuner { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-  .pid-tuner-row { padding: 16px; border-bottom: 1px solid var(--border); }
-  .pid-tuner-row:last-child { border-bottom: none; }
-  .pid-tuner-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .pid-tuner-name { font-size: 13px; font-weight: 600; font-family: var(--font-mono); }
-  .pid-tuner-live { font-size: 11px; font-family: var(--font-mono); color: var(--muted); } /* shows the value currently active on the robot, not the slider */
-  .pid-tuner-live span { color: var(--text); }
-
-  /* Custom range slider styling (WebKit-focused, since this targets mobile Safari/Chrome) */
-  .slider-wrap { position: relative; margin-bottom: 10px; }
-  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 36px; background: transparent; cursor: pointer; }
-  input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--surface2); }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px; height: 22px; border-radius: 50%;
-    margin-top: -9px; border: 2px solid var(--bg);
-    transition: transform 0.1s;
-  }
-  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); } /* tactile feedback while dragging */
-  /* Each slider is color-coded to match its PID term */
-  input[type=range].p-slider::-webkit-slider-thumb { background: var(--blue);   box-shadow: 0 0 8px rgba(96,165,250,0.4); }
-  input[type=range].i-slider::-webkit-slider-thumb { background: var(--accent); box-shadow: 0 0 8px rgba(74,222,128,0.4); }
-  input[type=range].d-slider::-webkit-slider-thumb { background: var(--warn);   box-shadow: 0 0 8px rgba(251,146,60,0.4); }
-  input[type=range].t-slider::-webkit-slider-thumb { background: var(--purple); box-shadow: 0 0 8px rgba(167,139,250,0.4); }
-
-  .slider-ticks { display: flex; justify-content: space-between; margin-top: -4px; }
-  .slider-ticks span { font-size: 10px; font-family: var(--font-mono); color: var(--muted); }
-
-  /* Numeric input row (stepper buttons + manual entry), synced to the slider above it */
-  .num-row { display: flex; align-items: center; gap: 8px; }
-  .num-input {
-    flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 9px 12px; font-size: 14px; font-family: var(--font-mono); color: var(--text);
-    outline: none; -moz-appearance: textfield; text-align: center;
-  }
-  .num-input::-webkit-outer-spin-button,
-  .num-input::-webkit-inner-spin-button { -webkit-appearance: none; } /* hide native up/down arrows, we have our own +/- buttons */
-  .num-input:focus { border-color: rgba(255,255,255,0.2); }
-  .step-btn {
-    width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--surface2); color: var(--text); font-size: 18px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: background 0.15s; user-select: none; flex-shrink: 0;
-  }
-  .step-btn:active { background: var(--surface); transform: scale(0.95); }
-
-  /* "Send to robot" button — sends the currently-set P/I/D over the websocket */
-  .send-btn {
-    width: 100%; padding: 14px; border-radius: 12px;
-    border: 1px solid rgba(74,222,128,0.3); background: var(--accent-dim); color: var(--accent);
-    font-size: 14px; font-family: var(--font-mono); font-weight: 600;
-    cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
-  }
-  .send-btn:active { transform: scale(0.98); background: rgba(74,222,128,0.2); }
-  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .send-btn.sent { background: rgba(74,222,128,0.25); border-color: var(--accent); } /* brief "✓ Sent" confirmation state */
-
-  /* Read-only display of the gains the ESP32 last echoed back (ground truth) */
-  .active-values { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-  .active-values-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-  .active-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .active-item { text-align: center; }
-  .active-item-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); margin-bottom: 2px; }
+  .active-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+  .active-item-label { font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
   .active-item-val { font-size: 18px; font-weight: 600; font-family: var(--font-mono); }
 
-  /* Target-angle trim card (mechanical lean offset compensation) */
-  .target-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-  .target-header { padding: 14px 16px 0; display: flex; justify-content: space-between; align-items: center; }
-  .target-title { font-size: 11px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-  .target-val-display { font-size: 13px; font-family: var(--font-mono); color: var(--purple); font-weight: 600; }
-  .target-body { padding: 8px 16px 16px; }
-  .target-send-btn {
-    width: 100%; margin-top: 10px; padding: 11px; border-radius: 8px;
-    border: 1px solid rgba(167,139,250,0.3); background: rgba(167,139,250,0.1); color: var(--purple);
-    font-size: 13px; font-family: var(--font-mono); cursor: pointer; transition: all 0.2s;
-  }
-  .target-send-btn:active { transform: scale(0.98); }
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 32px; background: transparent; }
+  input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--surface2); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    margin-top: -8px; border: 2px solid var(--bg); background: var(--accent); }
 
-  /* ======================================================================
-     TOAST  (small "P=... sent" style confirmation popup, bottom of screen)
-     ====================================================================== */
-  .toast {
-    position: fixed; bottom: 24px; left: 50%;
-    transform: translateX(-50%) translateY(80px); /* hidden below the screen by default */
-    background: var(--surface); border: 1px solid var(--border); border-radius: 24px;
-    padding: 10px 20px; font-size: 13px; font-family: var(--font-mono); color: var(--text);
-    white-space: nowrap; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    z-index: 100; pointer-events: none;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); } /* slides up into view */
-  .toast.success { color: var(--accent); border-color: rgba(74,222,128,0.3); }
-  .toast.error   { color: var(--danger); border-color: rgba(248,113,113,0.3); }
+  .num-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .num-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px; font-family: var(--font-mono); color: var(--text); text-align: center; }
+  .step-btn { width: 34px; height: 34px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 16px; cursor: pointer; }
 
-  /* ======================================================================
-     CONNECTION OVERLAY  (full-screen "Connecting..." / retry screen)
-     ====================================================================== */
-  .overlay {
-    position: fixed; inset: 0; z-index: 50;
-    background: rgba(13,13,15,0.92);
-    backdrop-filter: blur(8px);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-    transition: opacity 0.3s;
-  }
-  .overlay.hidden { opacity: 0; pointer-events: none; } /* toggled off once the WebSocket connects */
-  .overlay-icon { font-size: 48px; }
-  .overlay-title { font-size: 18px; font-weight: 600; }
-  .overlay-sub { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6; max-width: 240px; }
-  .retry-btn {
-    margin-top: 8px; padding: 11px 28px; border-radius: 24px;
-    border: 1px solid rgba(74,222,128,0.3); background: var(--accent-dim); color: var(--accent);
-    font-size: 13px; font-family: var(--font-mono); cursor: pointer; transition: all 0.2s;
-  }
-  .retry-btn:active { transform: scale(0.97); }
+  .send-btn { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(74,222,128,0.3);
+    background: var(--accent-dim); color: var(--accent); font-family: var(--font-mono); font-weight: 600; cursor: pointer; }
+  .send-btn.sent { background: rgba(74,222,128,0.25); }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; font-size: 12px;
+    font-family: var(--font-mono); opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .toast.success { color: var(--accent); }
+  .toast.error { color: var(--danger); }
 </style>
 </head>
 <body>
 
-<!-- ==========================================================================
-     CONNECTION OVERLAY
-     Shown on load and whenever the WebSocket drops. Hidden as soon as
-     ws.onopen fires (see connect() in the script below).
-     ========================================================================== -->
-<div class="overlay" id="overlay">
-  <div class="overlay-icon">📡</div>
-  <div class="overlay-title">Connecting…</div>
-  <div class="overlay-sub" id="overlay-sub">
-    Looking for StabilityBot at <strong id="ws-url-display"></strong>
-  </div>
-  <button class="retry-btn" onclick="reconnect()">Retry</button>
-</div>
-
-<!-- Toast notification, reused for both PID-send and target-send confirmations -->
 <div class="toast" id="toast"></div>
 
-<!-- ==========================================================================
-     HEADER
-     ========================================================================== -->
 <header class="header">
-  <div class="header-left">
-    <div class="logo">
-      <!-- simple robot-on-wheels glyph -->
-      <svg viewBox="0 0 24 24">
-        <rect x="7" y="4" width="10" height="13" rx="2"/>
-        <line x1="9" y1="8" x2="15" y2="8"/>
-        <line x1="9" y1="11" x2="13" y2="11"/>
-        <circle cx="8" cy="19" r="2"/>
-        <circle cx="16" cy="19" r="2"/>
-        <line x1="10" y1="19" x2="14" y2="19"/>
-      </svg>
-    </div>
-    <div>
-      <div class="header-title">StabilityBot MK1</div>
-      <div class="header-sub" id="header-sub">192.168.4.1</div> <!-- filled in with actual host by JS -->
-    </div>
+  <div>
+    <div class="header-title">StabilityBot MK1</div>
+    <div class="header-sub" id="header-sub">192.168.4.1</div>
   </div>
   <div class="conn-badge disconnected" id="conn-badge">
-    <div class="conn-dot"></div>
     <span id="conn-text">offline</span>
   </div>
 </header>
 
-<!-- ==========================================================================
-     TAB SWITCHER
-     ========================================================================== -->
 <div class="tabs">
   <div class="tab active" onclick="switchTab('telemetry')">Telemetry</div>
   <div class="tab" onclick="switchTab('tuning')">PID Tuning</div>
 </div>
 
-<!-- ==========================================================================
-     TAB 1: TELEMETRY  — live view of pitch, motor output, and PID terms
-     ========================================================================== -->
 <div class="tab-panel active" id="panel-telemetry">
 <div class="content">
 
-  <!-- Big pitch-angle readout + horizon indicator -->
-  <div class="pitch-hero">
-    <div class="pitch-label">pitch angle</div>
-    <div class="pitch-display">
-      <div class="pitch-value safe" id="pitch-val">0.0</div>
-      <div class="pitch-unit">°</div>
-    </div>
-    <div class="horizon-wrap">
-      <div class="horizon-track"></div>
-      <div class="horizon-fill" id="h-fill" style="background:var(--accent);"></div>
-      <div class="horizon-thumb" id="h-thumb"></div>
-      <div class="horizon-labels"><span>−70°</span><span>0°</span><span>+70°</span></div>
-    </div>
+  <div class="card">
+    <div class="label">pitch angle</div>
+    <div class="pitch-value safe" id="pitch-val">0.0°</div>
   </div>
 
-  <!-- Four key numbers at a glance -->
   <div class="stat-grid">
-    <div class="stat-card">
-      <div class="stat-card-label">error</div>
-      <div><span class="stat-card-value" id="err-val">0.0</span><span class="stat-card-unit">°</span></div>
-      <div class="stat-card-sub" id="err-dir">on target</div>
+    <div class="card">
+      <div class="label">error</div>
+      <div><span class="stat-val" id="err-val">0.0</span><span class="stat-unit">°</span></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-card-label">motor</div>
-      <div><span class="stat-card-value" id="motor-val">0</span><span class="stat-card-unit">/255</span></div>
-      <div class="motor-bar-track"><div class="motor-zero"></div><div class="motor-bar-fill" id="motor-bar"></div></div>
+    <div class="card">
+      <div class="label">motor</div>
+      <div><span class="stat-val" id="motor-val">0</span><span class="stat-unit">/255</span></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-card-label">pid output</div>
-      <div><span class="stat-card-value" id="offset-val">0.00</span></div>
-      <div class="stat-card-sub">total offset</div>
+    <div class="card">
+      <div class="label">pid output</div>
+      <div class="stat-val" id="offset-val">0.00</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-card-label">packets</div>
-      <div><span class="stat-card-value" id="pkt-val">0</span></div>
-      <div class="stat-card-sub" id="pkt-rate">— Hz</div>
+    <div class="card">
+      <div class="label">loop time</div>
+      <div><span class="stat-val" id="dt-val">—</span><span class="stat-unit"> ms</span></div>
     </div>
   </div>
 
-  <!-- Little robot illustration that visually tilts to match live pitch -->
-  <div class="robot-card">
-    <div class="robot-viz">
-      <div class="robot-ground"></div>
-      <div class="robot-svg-wrap" id="robot-wrap">
-        <svg width="36" height="60" viewBox="0 0 36 60" fill="none">
-          <!-- wheels -->
-          <ellipse cx="8" cy="52" rx="7" ry="7" fill="#1e1e24" stroke="#3f3f46" stroke-width="1.5"/>
-          <ellipse cx="28" cy="52" rx="7" ry="7" fill="#1e1e24" stroke="#3f3f46" stroke-width="1.5"/>
-          <ellipse cx="8" cy="52" rx="3" ry="3" fill="#3f3f46"/>
-          <ellipse cx="28" cy="52" rx="3" ry="3" fill="#3f3f46"/>
-          <line x1="8" y1="52" x2="28" y2="52" stroke="#3f3f46" stroke-width="2"/>
-          <!-- chassis -->
-          <rect x="6" y="18" width="24" height="32" rx="3" fill="#1e1e24" stroke="#3f3f46" stroke-width="1.5"/>
-          <!-- "screen" -->
-          <rect x="10" y="22" width="16" height="10" rx="2" fill="#0d0d0f" stroke="#3f3f46" stroke-width="1"/>
-          <rect id="screen-fill" x="11" y="23" width="6" height="8" rx="1" fill="#4ade80" opacity="0.7"/>
-          <!-- battery pack -->
-          <rect x="11" y="35" width="14" height="9" rx="1.5" fill="#2a2a35" stroke="#4f4f5a" stroke-width="1"/>
-          <!-- IMU antenna/indicator -->
-          <line x1="18" y1="18" x2="18" y2="8" stroke="#4ade80" stroke-width="1.5" opacity="0.6"/>
-          <circle cx="18" cy="7" r="2" fill="#4ade80" opacity="0.6"/>
-          <circle cx="25" cy="36" r="2" fill="#60a5fa" opacity="0.8"/>
-        </svg>
-      </div>
-    </div>
-    <div class="robot-info">
-      <div class="robot-status-label">balance status</div>
-      <div class="robot-status-value safe" id="robot-status">Balanced</div>
-      <div class="robot-hint" id="robot-hint">Pitch within ±5° of target</div>
-    </div>
+  <div class="card">
+    <div class="label">PID terms</div>
+    <div class="pid-row"><span style="color:var(--blue)">P</span><span id="p-val" style="color:var(--blue)">0.00</span></div>
+    <div class="pid-row"><span style="color:var(--accent)">I</span><span id="i-val" style="color:var(--accent)">0.00</span></div>
+    <div class="pid-row"><span style="color:var(--warn)">D</span><span id="d-val" style="color:var(--warn)">0.00</span></div>
   </div>
 
-  <!-- Rolling pitch-history chart, hand-drawn on <canvas> in drawSparkline() -->
-  <div class="chart-card">
-    <div class="chart-header">
-      <div class="chart-title">pitch history</div>
-      <div class="chart-current" id="chart-cur">0.0°</div>
-    </div>
-    <canvas class="sparkline" id="sparkline" width="600" height="160"></canvas>
-  </div>
-
-  <!-- P / I / D contribution bars, each centered on zero -->
-  <div class="section-label">PID terms</div>
-  <div class="pid-card">
-    <div class="pid-row">
-      <div class="pid-name" style="color:#60a5fa">P</div>
-      <div class="pid-bar-wrap"><div class="pid-center"></div><div class="pid-bar-fill" id="p-bar" style="background:#60a5fa"></div></div>
-      <div class="pid-val" id="p-val" style="color:#60a5fa">0.00</div>
-    </div>
-    <div class="pid-row">
-      <div class="pid-name" style="color:#4ade80">I</div>
-      <div class="pid-bar-wrap"><div class="pid-center"></div><div class="pid-bar-fill" id="i-bar" style="background:#4ade80"></div></div>
-      <div class="pid-val" id="i-val" style="color:#4ade80">0.00</div>
-    </div>
-    <div class="pid-row">
-      <div class="pid-name" style="color:#fb923c">D</div>
-      <div class="pid-bar-wrap"><div class="pid-center"></div><div class="pid-bar-fill" id="d-bar" style="background:#fb923c"></div></div>
-      <div class="pid-val" id="d-val" style="color:#fb923c">0.00</div>
-    </div>
-  </div>
-
-  <!-- Control-loop timing (dt) with a small history bar-graph -->
-  <div class="loop-card">
-    <div class="loop-left">
-      <div class="loop-label">loop time</div>
-      <div class="loop-val"><span id="dt-val">—</span><span class="loop-unit"> ms</span></div>
-    </div>
-    <div class="loop-bars" id="dt-bars">
-      <!-- initial placeholder heights; real heights get set once data starts arriving -->
-      <div class="loop-bar" style="height:40%"></div><div class="loop-bar" style="height:60%"></div>
-      <div class="loop-bar" style="height:50%"></div><div class="loop-bar" style="height:70%"></div>
-      <div class="loop-bar" style="height:45%"></div><div class="loop-bar" style="height:55%"></div>
-      <div class="loop-bar" style="height:50%"></div><div class="loop-bar" style="height:65%"></div>
-    </div>
+  <div class="card">
+    <div class="label">packets received</div>
+    <div class="stat-val" id="pkt-val">0</div>
   </div>
 
 </div>
 </div>
 
-<!-- ==========================================================================
-     TAB 2: PID TUNING  — sliders/inputs to push new gains to the robot live
-     ========================================================================== -->
 <div class="tab-panel" id="panel-tuning">
 <div class="content">
 
-  <div class="tuning-hero">
-    <div class="tuning-title">Live PID tuning</div>
-    <div class="tuning-subtitle" style="margin-top:4px;">
-      Changes apply instantly — robot does not need to be rebooted.
-      Start with P, then add D to dampen, then I last.
-    </div>
-  </div>
+  <div class="tuning-note">Changes apply instantly. Start with P, then add D to dampen, then I last.</div>
 
-  <!-- Ground-truth gains as last echoed back by the robot over the websocket -->
-  <div class="active-values">
-    <div class="active-values-label">active on robot</div>
+  <div class="card">
+    <div class="label">active on robot</div>
     <div class="active-grid">
-      <div class="active-item">
-        <div class="active-item-label">P</div>
-        <div class="active-item-val" id="active-p" style="color:var(--blue)">—</div>
-      </div>
-      <div class="active-item">
-        <div class="active-item-label">I</div>
-        <div class="active-item-val" id="active-i" style="color:var(--accent)">—</div>
-      </div>
-      <div class="active-item">
-        <div class="active-item-label">D</div>
-        <div class="active-item-val" id="active-d" style="color:var(--warn)">—</div>
-      </div>
+      <div><div class="active-item-label">P</div><div class="active-item-val" id="active-p" style="color:var(--blue)">—</div></div>
+      <div><div class="active-item-label">I</div><div class="active-item-val" id="active-i" style="color:var(--accent)">—</div></div>
+      <div><div class="active-item-label">D</div><div class="active-item-val" id="active-d" style="color:var(--warn)">—</div></div>
     </div>
   </div>
 
-  <div class="pid-tuner">
-
-    <!-- P (Proportional) slider -->
-    <div class="pid-tuner-row">
-      <div class="pid-tuner-header">
-        <div class="pid-tuner-name" style="color:var(--blue)">P — Proportional</div>
-        <div class="pid-tuner-live">robot: <span id="live-p">—</span></div>
-      </div>
-      <input type="range" class="p-slider" id="p-slider" min="0" max="10" step="0.05" value="1.2">
-      <div class="slider-ticks"><span>0</span><span>2.5</span><span>5</span><span>7.5</span><span>10</span></div>
-      <div class="num-row" style="margin-top:10px;">
-        <button class="step-btn" onclick="step('p',-0.1)">−</button>
-        <input type="number" class="num-input" id="p-input" value="1.20" min="0" max="10" step="0.05">
-        <button class="step-btn" onclick="step('p', 0.1)">+</button>
-      </div>
+  <div class="card">
+    <div class="label" style="color:var(--blue)">P — Proportional</div>
+    <input type="range" id="p-slider" min="0" max="10" step="0.05" value="1.2">
+    <div class="num-row">
+      <button class="step-btn" onclick="step('p',-0.1)">−</button>
+      <input type="number" class="num-input" id="p-input" value="1.20" min="0" max="10" step="0.05">
+      <button class="step-btn" onclick="step('p', 0.1)">+</button>
     </div>
-
-    <!-- I (Integral) slider -->
-    <div class="pid-tuner-row">
-      <div class="pid-tuner-header">
-        <div class="pid-tuner-name" style="color:var(--accent)">I — Integral</div>
-        <div class="pid-tuner-live">robot: <span id="live-i">—</span></div>
-      </div>
-      <input type="range" class="i-slider" id="i-slider" min="0" max="50" step="0.1" value="0">
-      <div class="slider-ticks"><span>0</span><span>12.5</span><span>25</span><span>37.5</span><span>50</span></div>
-      <div class="num-row" style="margin-top:10px;">
-        <button class="step-btn" onclick="step('i',-0.1)">−</button>
-        <input type="number" class="num-input" id="i-input" value="0.00" min="0" max="50" step="0.1">
-        <button class="step-btn" onclick="step('i', 0.1)">+</button>
-      </div>
-    </div>
-
-    <!-- D (Derivative) slider — note the much smaller range, typical for D gains -->
-    <div class="pid-tuner-row">
-      <div class="pid-tuner-header">
-        <div class="pid-tuner-name" style="color:var(--warn)">D — Derivative</div>
-        <div class="pid-tuner-live">robot: <span id="live-d">—</span></div>
-      </div>
-      <input type="range" class="d-slider" id="d-slider" min="0" max="0.1" step="0.0005" value="0">
-      <div class="slider-ticks"><span>0</span><span>0.025</span><span>0.05</span><span>0.075</span><span>0.1</span></div>
-      <div class="num-row" style="margin-top:10px;">
-        <button class="step-btn" onclick="step('d',-0.001)">−</button>
-        <input type="number" class="num-input" id="d-input" value="0.0000" min="0" max="0.1" step="0.0005">
-        <button class="step-btn" onclick="step('d', 0.001)">+</button>
-      </div>
-    </div>
-
   </div>
 
-  <!-- Pushes the current P/I/D slider values to the robot as one JSON command -->
+  <div class="card">
+    <div class="label" style="color:var(--accent)">I — Integral</div>
+    <input type="range" id="i-slider" min="0" max="50" step="0.1" value="0">
+    <div class="num-row">
+      <button class="step-btn" onclick="step('i',-0.1)">−</button>
+      <input type="number" class="num-input" id="i-input" value="0.00" min="0" max="50" step="0.1">
+      <button class="step-btn" onclick="step('i', 0.1)">+</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label" style="color:var(--warn)">D — Derivative</div>
+    <input type="range" id="d-slider" min="0" max="0.1" step="0.0005" value="0">
+    <div class="num-row">
+      <button class="step-btn" onclick="step('d',-0.001)">−</button>
+      <input type="number" class="num-input" id="d-input" value="0.0000" min="0" max="0.1" step="0.0005">
+      <button class="step-btn" onclick="step('d', 0.001)">+</button>
+    </div>
+  </div>
+
   <button class="send-btn" id="send-btn" onclick="sendPID()">Send to robot</button>
 
-  <!-- Target-angle trim: compensates for mechanical lean (e.g. uneven weight distribution) -->
-  <div class="target-card">
-    <div class="target-header">
-      <div class="target-title">target angle</div>
-      <div class="target-val-display" id="target-display">0.0°</div>
-    </div>
-    <div class="target-body">
-      <input type="range" class="t-slider" id="t-slider" min="-15" max="15" step="0.5" value="0">
-      <div class="slider-ticks"><span>−15°</span><span>−7.5°</span><span>0°</span><span>7.5°</span><span>15°</span></div>
-      <button class="target-send-btn" onclick="sendTarget()">Set target angle</button>
-    </div>
-  </div>
-
-  <!-- Quick tuning cheat-sheet -->
-  <div style="font-size:11px; color:var(--muted); font-family:var(--font-mono); padding:0 4px; line-height:1.7;">
-    ⚠ P controls reaction strength. Too high → oscillation.<br>
-    ⚠ D dampens overshoot. Use small values (0.001–0.01).<br>
-    ⚠ I corrects steady-state lean. Add last, keep small.<br>
-    ⚠ Target angle trims mechanical lean offset.
+  <div class="card">
+    <div class="label" style="color:var(--purple)">target angle: <span id="target-display">0.0°</span></div>
+    <input type="range" id="t-slider" min="-15" max="15" step="0.5" value="0">
+    <button class="send-btn" style="margin-top:8px; border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.1); color: var(--purple);" onclick="sendTarget()">Set target angle</button>
   </div>
 
 </div>
 </div>
 
 <script>
-/* ============================================================================
-   CONFIG / STATE
-   ============================================================================ */
-
-// The ESP32 serves this page from its own SoftAP, so we just reuse whatever
-// hostname/IP the browser used to load the page (falls back to the default
-// SoftAP IP if that's ever empty, e.g. when opened from a local file).
 const WS_HOST = location.hostname || '192.168.4.1';
 const WS_URL  = `ws://${WS_HOST}/ws`;
-document.getElementById('ws-url-display').textContent = WS_HOST;
 document.getElementById('header-sub').textContent = WS_HOST;
 
-// Rolling buffers for the two mini time-series visualizations.
-const pitchHistory = new Array(80).fill(0); // feeds the sparkline chart
-const dtHistory    = new Array(8).fill(10); // feeds the loop-time bar graph
-
-let packetCount   = 0;   // total WS messages received this session
-let ws            = null;
+let packetCount = 0;
+let ws = null;
 let reconnectTimer = null;
 
-/* ============================================================================
-   TAB SWITCHING
-   ============================================================================ */
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t, i) =>
-    t.classList.toggle('active', ['telemetry', 'tuning'][i] === name)
-  );
+    t.classList.toggle('active', ['telemetry', 'tuning'][i] === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
 }
 
-/* ============================================================================
-   WEBSOCKET CONNECTION
-   Handles connect / auto-reconnect / manual retry, and dispatches incoming
-   telemetry JSON to handleData().
-   ============================================================================ */
 function connect() {
   setBadge('connecting', 'connecting…');
-  try {
-    ws = new WebSocket(WS_URL);
-  } catch (e) {
-    scheduleReconnect();
-    return;
-  }
+  try { ws = new WebSocket(WS_URL); } catch (e) { scheduleReconnect(); return; }
 
-  ws.onopen = () => {
-    setBadge('connected', 'live');
-    document.getElementById('overlay').classList.add('hidden');
-  };
+  ws.onopen = () => setBadge('connected', 'live');
 
   ws.onmessage = e => {
-    try { handleData(JSON.parse(e.data)); } catch (_) { /* ignore malformed frames */ }
+    try { handleData(JSON.parse(e.data)); } catch (_) {}
   };
 
   ws.onclose = ws.onerror = () => {
     setBadge('disconnected', 'offline');
-    document.getElementById('overlay').classList.remove('hidden');
-    document.getElementById('overlay-sub').textContent = 'Lost connection. Retrying…';
     scheduleReconnect();
   };
 }
 
-// Auto-retry every 3s while disconnected.
 function scheduleReconnect() {
   clearTimeout(reconnectTimer);
   reconnectTimer = setTimeout(connect, 3000);
 }
 
-// Manual "Retry" button handler — tears down any existing socket first so we
-// don't leak a stale connection or double-fire onclose.
-function reconnect() {
-  clearTimeout(reconnectTimer);
-  if (ws) {
-    ws.onclose = null;
-    ws.onerror = null;
-    try { ws.close(); } catch (_) {}
-  }
-  connect();
-}
-
-// Shared helper for sending JSON commands to the robot. Returns false (and
-// shows a toast) if we're not actually connected, so callers can bail out.
 function send(obj) {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     showToast('Not connected', 'error');
@@ -716,88 +243,49 @@ function send(obj) {
   return true;
 }
 
-/* ============================================================================
-   PID TUNING TAB — sending commands
-   ============================================================================ */
-
-// Reads the three PID number inputs and pushes them to the robot as
-// { cmd: 'pid', p, i, d }. Firmware side resets the integral term on receipt
-// (see PID globals Kp/Ki/Kd in firmware).
 function sendPID() {
   const p = parseFloat(document.getElementById('p-input').value) || 0;
   const i = parseFloat(document.getElementById('i-input').value) || 0;
   const d = parseFloat(document.getElementById('d-input').value) || 0;
 
   if (send({ cmd: 'pid', p, i, d })) {
-    // Brief "✓ Sent" confirmation on the button itself.
     const btn = document.getElementById('send-btn');
     btn.textContent = '✓ Sent';
     btn.classList.add('sent');
-    setTimeout(() => {
-      btn.textContent = 'Send to robot';
-      btn.classList.remove('sent');
-    }, 1500);
-
-    showToast(`P=${p.toFixed(3)}  I=${i.toFixed(3)}  D=${d.toFixed(4)}`, 'success');
+    setTimeout(() => { btn.textContent = 'Send to robot'; btn.classList.remove('sent'); }, 1200);
+    showToast(`P=${p.toFixed(3)} I=${i.toFixed(3)} D=${d.toFixed(4)}`, 'success');
   }
 }
 
-// Sends the target-angle trim as { cmd: 'target', angle }.
 function sendTarget() {
   const angle = parseFloat(document.getElementById('t-slider').value);
-  if (send({ cmd: 'target', angle })) {
-    showToast(`Target → ${angle.toFixed(1)}°`, 'success');
-  }
+  if (send({ cmd: 'target', angle })) showToast(`Target → ${angle.toFixed(1)}°`, 'success');
 }
 
-/* ============================================================================
-   PID TUNING TAB — slider <-> number input syncing
-   ============================================================================ */
-
-// Keeps a <input type=range> and its paired <input type=number> in lockstep
-// in both directions, formatted to a fixed number of decimals.
 function bindSliderInput(sliderId, inputId, decimals) {
-  const sl  = document.getElementById(sliderId);
+  const sl = document.getElementById(sliderId);
   const inp = document.getElementById(inputId);
-  sl.addEventListener('input',  () => { inp.value = parseFloat(sl.value).toFixed(decimals); });
-  inp.addEventListener('input', () => { sl.value  = inp.value; });
+  sl.addEventListener('input', () => { inp.value = parseFloat(sl.value).toFixed(decimals); });
+  inp.addEventListener('input', () => { sl.value = inp.value; });
 }
 bindSliderInput('p-slider', 'p-input', 3);
 bindSliderInput('i-slider', 'i-input', 3);
 bindSliderInput('d-slider', 'd-input', 4);
 
-// Target-angle slider just updates its own readout (no paired number input).
 document.getElementById('t-slider').addEventListener('input', function () {
   document.getElementById('target-display').textContent = parseFloat(this.value).toFixed(1) + '°';
 });
 
-// +/- stepper buttons next to each PID number input. Clamps to the slider's
-// own min/max so you can't step past the valid range.
 function step(term, delta) {
   const inp = document.getElementById(term + '-input');
-  const sl  = document.getElementById(term + '-slider');
+  const sl = document.getElementById(term + '-slider');
   const decimals = term === 'd' ? 4 : 3;
-
   let v = (parseFloat(inp.value) || 0) + delta;
   v = Math.max(parseFloat(sl.min), Math.min(parseFloat(sl.max), v));
-
   inp.value = v.toFixed(decimals);
-  sl.value  = v;
+  sl.value = v;
 }
 
-/* ============================================================================
-   INCOMING TELEMETRY — main data handler
-   Called once per WebSocket message. Expected JSON shape (fields optional,
-   default to 0 if missing):
-     {
-       pitch, err,        // degrees
-       p, i, d,           // individual PID term contributions
-       offset,            // total PID output
-       speed,             // motor command, -255..255
-       dt,                // control loop time, ms
-       kp, ki, kd         // currently active gains (echoed by firmware)
-     }
-   ============================================================================ */
 function handleData(d) {
   const pitch  = d.pitch  ?? 0;
   const err    = d.err    ?? 0;
@@ -808,179 +296,36 @@ function handleData(d) {
   const speed  = d.speed  ?? 0;
   const dt     = d.dt     ?? 0;
 
-  // ---- Pitch hero: big number + color state -------------------------------
   const absP = Math.abs(pitch);
-  const cls  = absP < 15 ? 'safe' : absP < 40 ? 'warn' : 'danger'; // safe/warn/danger threshold bands
+  const cls = absP < 15 ? 'safe' : absP < 40 ? 'warn' : 'danger';
   const pitchEl = document.getElementById('pitch-val');
-  pitchEl.textContent = pitch.toFixed(1);
-  pitchEl.className   = 'pitch-value ' + cls;
+  pitchEl.textContent = pitch.toFixed(1) + '°';
+  pitchEl.className = 'pitch-value ' + cls;
 
-  // ---- Horizon bar: map pitch (-70..+70) to a 0..1 position along the track
-  const trackW   = document.querySelector('.horizon-wrap').offsetWidth || 300;
-  const clampedP = Math.max(-70, Math.min(70, pitch));
-  const pct      = (clampedP + 70) / 140; // normalize to 0..1
-  const thumbX   = pct * trackW;
-
-  const thumb = document.getElementById('h-thumb');
-  const fill  = document.getElementById('h-fill');
-  thumb.style.left = thumbX + 'px';
-  thumb.className  = 'horizon-thumb ' + cls;
-
-  const fillColor = cls === 'safe' ? 'var(--accent)' : cls === 'warn' ? 'var(--warn)' : 'var(--danger)';
-  // Fill bar grows from the center (0°) outward toward the thumb, either direction.
-  if (pitch >= 0) { fill.style.left = '50%';    fill.style.width = (pct - 0.5) * trackW + 'px'; }
-  else            { fill.style.left = thumbX + 'px'; fill.style.width = (0.5 - pct) * trackW + 'px'; }
-  fill.style.background = fillColor;
-
-  // ---- Stat grid ------------------------------------------------------------
-  document.getElementById('err-val').textContent    = err.toFixed(1);
-  document.getElementById('err-dir').textContent    = err > 1 ? 'leaning forward' : err < -1 ? 'leaning back' : 'on target';
-  document.getElementById('motor-val').textContent  = speed;
+  document.getElementById('err-val').textContent = err.toFixed(1);
+  document.getElementById('motor-val').textContent = speed;
   document.getElementById('offset-val').textContent = offset.toFixed(2);
-  document.getElementById('dt-val').textContent     = dt.toFixed(1);
+  document.getElementById('dt-val').textContent = dt.toFixed(1);
 
-  // Motor bar: bidirectional fill from center, same logic as the horizon fill.
-  const mPct = speed / 255;
-  const mBar = document.getElementById('motor-bar');
-  if (mPct >= 0) { mBar.style.left = '50%';               mBar.style.width = (mPct * 50) + '%'; }
-  else           { mBar.style.left = (50 + mPct * 50) + '%'; mBar.style.width = (-mPct * 50) + '%'; }
+  document.getElementById('p-val').textContent = p.toFixed(2);
+  document.getElementById('i-val').textContent = iv.toFixed(2);
+  document.getElementById('d-val').textContent = dv.toFixed(2);
 
-  // ---- Robot illustration: tilt + status text --------------------------------
-  const robotWrap = document.getElementById('robot-wrap');
-  robotWrap.style.transform = `rotate(${pitch * 0.7}deg)`; // scaled down so it doesn't look absurd at high angles
-
-  const statusEl = document.getElementById('robot-status');
-  const hintEl   = document.getElementById('robot-hint');
-  statusEl.className = 'robot-status-value ' + cls;
-
-  // Five-tier status ladder from "Balanced" to "Fallen".
-  if      (absP < 5)  { statusEl.textContent = 'Balanced';   hintEl.textContent = 'Pitch within ±5° of target'; }
-  else if (absP < 15) { statusEl.textContent = 'Correcting'; hintEl.textContent = `${pitch > 0 ? 'Forward' : 'Backward'} lean, PID active`; }
-  else if (absP < 40) { statusEl.textContent = 'Recovering'; hintEl.textContent = `${absP.toFixed(1)}° off — motors at max effort`; }
-  else if (absP < 70) { statusEl.textContent = 'Falling';    hintEl.textContent = 'Near fall threshold (±70°)'; }
-  else                { statusEl.textContent = 'Fallen';     hintEl.textContent = 'Beyond recovery threshold'; }
-
-  // ---- PID term bars ----------------------------------------------------------
-  setPidBar('p-bar', 'p-val', p,  10); // scale = max expected magnitude for that term
-  setPidBar('i-bar', 'i-val', iv, 5);
-  setPidBar('d-bar', 'd-val', dv, 2);
-
-  // ---- Sparkline chart ----------------------------------------------------------
-  pitchHistory.push(pitch);
-  pitchHistory.shift();
-  drawSparkline();
-  document.getElementById('chart-cur').textContent = pitch.toFixed(1) + '°';
-
-  // ---- Loop-time bar graph --------------------------------------------------
-  dtHistory.push(dt);
-  dtHistory.shift();
-  const maxDt = Math.max(...dtHistory, 1); // avoid divide-by-zero
-  const bars  = document.getElementById('dt-bars').children;
-  for (let b = 0; b < bars.length; b++) {
-    bars[b].style.height = Math.max(10, (dtHistory[b] / maxDt) * 100) + '%';
-  }
-
-  // ---- Packet counter -------------------------------------------------------
   packetCount++;
   document.getElementById('pkt-val').textContent = packetCount;
 
-  // ---- Tuning tab: reflect the gains the firmware says are actually active --
-  // (Only present when the firmware echoes kp/ki/kd back, e.g. right after a
-  // PID update or periodically as part of normal telemetry.)
   if (d.kp !== undefined) {
     document.getElementById('active-p').textContent = d.kp.toFixed(3);
     document.getElementById('active-i').textContent = d.ki.toFixed(3);
     document.getElementById('active-d').textContent = d.kd.toFixed(4);
-    document.getElementById('live-p').textContent    = d.kp.toFixed(3);
-    document.getElementById('live-i').textContent    = d.ki.toFixed(3);
-    document.getElementById('live-d').textContent    = d.kd.toFixed(4);
   }
 }
 
-// Sets a bidirectional PID term bar's width/position and its numeric label.
-// `scale` is the value that should map to a full-width bar in either direction.
-function setPidBar(barId, valId, val, scale) {
-  const bar = document.getElementById(barId);
-  const pct = Math.max(-1, Math.min(1, val / scale));
-  if (pct >= 0) { bar.style.left = '50%';             bar.style.width = (pct * 50) + '%'; }
-  else          { bar.style.left = (50 + pct * 50) + '%'; bar.style.width = (-pct * 50) + '%'; }
-  document.getElementById(valId).textContent = val.toFixed(2);
-}
-
-/* ============================================================================
-   SPARKLINE CHART — hand-rolled canvas drawing (no charting library)
-   ============================================================================ */
-function drawSparkline() {
-  const canvas = document.getElementById('sparkline');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0, 0, W, H);
-
-  // Maps a pitch value (±70°) to a vertical pixel position, centered at H/2.
-  const scaleY = v => H / 2 - (v / 70) * (H / 2 - 8);
-
-  // Zero line (dashed, subtle).
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.moveTo(0, H / 2);
-  ctx.lineTo(W, H / 2);
-  ctx.stroke();
-
-  // ±15° reference lines (roughly the "safe" balance band).
-  ctx.strokeStyle = 'rgba(251,146,60,0.15)';
-  ctx.setLineDash([]);
-  [15, -15].forEach(v => {
-    ctx.beginPath();
-    ctx.moveTo(0, scaleY(v));
-    ctx.lineTo(W, scaleY(v));
-    ctx.stroke();
-  });
-
-  // Nothing to draw yet if we haven't received any real data.
-  if (pitchHistory.every(v => v === 0)) return;
-
-  const step = W / (pitchHistory.length - 1);
-
-  // Filled area under the pitch line, fading to transparent.
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(74,222,128,0.25)');
-  grad.addColorStop(1, 'rgba(74,222,128,0)');
-  ctx.beginPath();
-  pitchHistory.forEach((v, i) => {
-    const x = i * step, y = scaleY(v);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  });
-  ctx.lineTo(W, H / 2);
-  ctx.lineTo(0, H / 2);
-  ctx.closePath();
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  // The pitch line itself, on top of the fill.
-  ctx.beginPath();
-  pitchHistory.forEach((v, i) => {
-    const x = i * step, y = scaleY(v);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  });
-  ctx.strokeStyle = '#4ade80';
-  ctx.lineWidth = 1.5;
-  ctx.lineJoin = 'round';
-  ctx.stroke();
-}
-
-/* ============================================================================
-   SMALL UI HELPERS
-   ============================================================================ */
-
-// Updates the connection pill in the header (color class + label text).
 function setBadge(state, label) {
   document.getElementById('conn-badge').className = 'conn-badge ' + state;
   document.getElementById('conn-text').textContent = label;
 }
 
-// Shows a toast message for ~2.5s, resetting the timer if called again quickly.
 let toastTimer = null;
 function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
@@ -988,14 +333,10 @@ function showToast(msg, type = 'success') {
   t.className = 'toast ' + type;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-/* ============================================================================
-   INIT
-   ============================================================================ */
-drawSparkline(); // draw the empty chart grid immediately, before any data arrives
-connect();       // kick off the WebSocket connection to the robot
+connect();
 </script>
 </body>
 </html>

@@ -144,9 +144,25 @@ Also finished encoder PCB design.
 
 Started working on LQR formulas derivation and simulation. Lots of juicy high level math.
 
-The first thing I did was put together what essentially is a simplified paper covering how LQR will be implmented specifically in my project. There is a lot I don't yet know so expect updates as I learn more about LQR.
+The first thing I did was put together what essentially is a simplified writeup covering how LQR will be implmented specifically in my project. There is a lot I don't yet know so expect updates as I learn more about LQR.
 
-To see my "*paper*" about the math behind LQR, go to docs/LQR.md
+To see my writeup about the math behind LQR, go to docs/LQR.md
 
 
 **Total time spent: 5 hours**
+
+# Aug 17: PCB layout and Started V2 CAD Model
+
+Heres the Layout for the final PCB. Have not reviewed or added silkscreen touchups yet.
+
+![alt text](Assets/image-14.png)
+
+Also started designing a sleeker cad model designed to hould the PCB, motors, and battery.
+I had to do this without having any of the parts on hand so I also had to spend some time looking online for part dimensions. 
+
+![alt text](Assets/image-15.png)
+
+Im trying to design the PCB and CAD in paralel to make sure the overall robot is as well put together as possible.
+
+
+**Total timespent: 1 hour 40 min**

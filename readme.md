@@ -23,11 +23,23 @@ controller down the line.
 
 ## Photos
 
-
 ![alt text](Assets/PXL_20260614_190938876.jpg)
 ![alt text](Assets/PXL_20260625_170037840.jpg)
-![alt text](Assets/image-7.png)
 ![alt text](Assets/image-8.png)
+
+## Demo Video
+
+This version used PID to validate the hardware setup and learn about basic control theory. 
+
+![alt text](Assets/video.mp4)
+
+Will implement LQR in the future.
+
+## Current Wiring Diagram (Subject to change)
+![alt text](Assets/image-7.png)
+
+## Future Diagram
+![alt text](Assets/image-16.png)
 
 ## Current Features
 
@@ -41,13 +53,13 @@ controller down the line.
 
 | Component | Current | Planned Upgrade |
 |---|---|---|
-| Compute | ESP32 Devboard | Custom ESP32-S3 PCB |
+| Compute | ESP32 Devboard | - |
 | IMU | MPU6050 | Bosch BMI320 (SPI) |
 | Motor driver | L293D | TB6612FNG |
 | Motors | Standard yellow DC geared motors | — |
-| Battery | ELEGOO battery pack | High-discharge 2S LiPo |
+| Battery | ELEGOO battery pack | Will be compatible with any 2s Battery |
 | Chassis | 3D printed | — |
-| Encoders | None | AS5600 / AS5600L (for 4-state LQR) |
+| Encoders | None | AS5600 |
 
 ## Software Overview
 
@@ -76,10 +88,21 @@ controller down the line.
 3. Build and flash with `idf.py build flash monitor`
 4. Connect to the robot's WebSocket dashboard to tune PID live
 
-## Bill of Materials
+## Rough Bill of Materials
 
-See the BOM.csv. Still a work in progress as some parts are not yet finalized.
+See the full BOM in BOM.csv. Still a work in progress as some passive parts are not yet finalized.
 
+| Category | Qty | Part | Value | LCSC Part # | Price/unit | Extended Description | Link |
+|---|---|---|---|---|---|---|---|
+| Compute | 1 | ESP32 WROVER DevKitC | Espressif ESP32-WROVER-DevKitC | $11.99 | — | Purchased from DigiKey | [DigiKey](https://www.digikey.com/en/products/detail/espressif-systems/ESP32-DEVKITC-VIE/12091811) |
+| IMU | 1 | BMI320 IMU | Bosch BMI320 | C22391148 | $0.99 | SPI IMU | [LCSC](https://www.lcsc.com/product-detail/C22391148.html) |
+| Mechanics | 2 | Diametric Magnets | — | — | — | Will try to find (Hard to find affordable sources) | [Amazon](https://www.amazon.com/Diametrically-Magnetized-Neodymium-Permanent-Magnet/dp/B0GWXBS6SM) |
+| Encoder | 1 | AS5600 Magnetic Encoder | AMS AS5600 | C499458 | $1.1855 | For wheel position tracking | [LCSC](https://www.lcsc.com/product-detail/C499458.html) |
+| Motor Driver | 1 | TB6612FNG Motor Driver | Toshiba TB6612FNG | C141517 | $1.1659 | Target PCB driver; STBY tied to GPIO | [LCSC](https://www.lcsc.com/product-detail/C141517.html) |
+| Mechanical | 2 | DC Gear Motors | — | — | — | Includes wheels | [Amazon](https://www.amazon.ca/SazkJere-Geared-Motor-Gearbox-200RPM/dp/B0G64KFYPS) |
+| Mechanical | 1 | Chassis / Frame (custom) | — | — | — | Onshape CAD; STEP in `hardware/cad/step/` | — |
+
+**Total cost:** *TBD — ESP32, magnets, gear motors, and chassis are missing per-unit pricing.* Known subtotal (BMI320 + AS5600 + TB6612FNG, qty 1 each): **$3.34**
 ## Known Issues
 
 - IMU signal occasionally drops out on the current breadboard

@@ -32,7 +32,7 @@ So this giant integral
 $$J = \int_{0}^{\infty} (x^T Q x + u^T R u) dt$$
 works out to how much work + how much error summed over time. Or in other words: If we let the system run forever, how optimal would it be. Smaller = better.
 
-The nice part here is we get to define $Q$ and $R$ to mathmaticall define how much we care about fixing error and control effor respectivley.
+The nice part here is we get to define $Q$ and $R$ to mathmatically define how much we care about error correction and control effort respectivley.
 
 So what we want is
 
@@ -50,7 +50,7 @@ where the only unknown is $P$
 
 This is basically *impossible* to derive and solve by hand but that's what computers are for.
 
-After solving we get the optimal gain matric $K$ in the form.
+After solving we get the optimal gain matrix $K$ in the form.
 
 $$K=R−1BTP$$
 
@@ -65,9 +65,7 @@ Up until this point everything has been computed offline. Now all the MCU has to
 $$u = -Kx$$
 
 
-I hope this made some sense because writing this out definetly helped me understand how im going to implement all this in the near future.
-
-Feel free to ask if anything is unclear and I will try to answer you. Just keep in mind I am NOT a professor, just unemployed.
+I hope this made some sense. writing this out definetly helped me understand how I'm going to implement all this in the near future.
 
 This was a very simple description of how LQR works. If this sparked your curiosity then check out this video from someone who really knows what they're talking about.
 

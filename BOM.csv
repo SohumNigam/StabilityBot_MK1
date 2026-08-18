@@ -1,12 +1,13 @@
 Category,Qty,Part,Value,LCSC Part number,Price/unit,Extended description,Link
-Compute,1,ESP32 WROVER DevKitC,Espressif ESP32-WROVER-DevKitC,,,Purchased from digikey ,https://www.digikey.com/en/products/detail/espressif-systems/ESP32-DEVKITC-VIE/12091811
+Compute,1,ESP32 WROVER DevKitC,Espressif ESP32-WROVER-DevKitC,,$12,Purchased from digikey ,https://www.digikey.com/en/products/detail/espressif-systems/ESP32-DEVKITC-VIE/12091811
 IMU,1,BMI320 IMU,Bosch BMI320,C22391148,$0.99,SPI IMU,https://www.lcsc.com/product-detail/C22391148.html?spm=wm.ddx.0.xqy___wm.ddl.ddb.1.ddh&lcsc_vid=TlgPUl1SRQJdVVIHTlZeVFVVQwcNUwZRRVVdUlRQFlMxVlNeQVlWV1JQQFNXUTtW
 Passive,2,Capacitor,100nf,,,,
+Mechanics,2,Diametric magnets,,,,Will try to find,https://www.amazon.com/Diametrically-Magnetized-Neodymium-Permanent-Magnet/dp/B0GWXBS6SM?th=1
 Encoder,1,AS5600 Magnetic Encoder,AMS AS5600,C499458,$ 1.1855,For wheel pos tracking,https://www.lcsc.com/product-detail/C499458.html?spm=wm.gwc.xh.1.cbm___wm.sy.ssl.gwc&lcsc_vid=TlgPUl1SRQJdVVIHTlZeVFVVQwcNUwZRRVVdUlRQFlMxVlNeQVlWV1JQQFNXUTtW
 Motor Driver,1,TB6612FNG Motor Driver,Toshiba TB6612FNG,C141517,$ 1.1659,Target PCB driver; STBY tied to GPIO (to purchase),https://www.lcsc.com/product-detail/C141517.html?spm=wm.gwc.xh.0.cbm___wm.sy.ssl.gwc&lcsc_vid=TlgPUl1SRQJdVVIHTlZeVFVVQwcNUwZRRVVdUlRQFlMxVlNeQVlWV1JQQFNXUTtW
-Power,1,LDO Regulator,TBD (Probably  AMS1117),,,3.3V LDO for PCB (to purchase),
-Mechanical,2,DC Gear Motors,,,,Confirm specs - voltage/RPM/torque (owned),
-Mechanical,2,Wheels,Included with motors,,,Owned,
+,,,,,,,
+Mechanical,2,DC Gear Motors,,,$25,Includes Wheels,https://www.amazon.ca/SazkJere-Geared-Motor-Gearbox-200RPM/dp/B0G64KFYPS/ref=sr_1_1?crid=10AUSOB7QL180&dib=eyJ2IjoiMSJ9.D-Q8CQewFELjcy3AEYWizWty3CRa7KjGgYh34xoc211XhoWmB5yni0eJMQO9hEmiBfi38OKlqGQJMe147IKiyxKqfwG-wTrOj7j1u3I4SNpMQCOePVN5pOg2UVu9V0bnTf6IMqpzbs4JSFThYSk-jRu23IUH_Mzl7PmbO9BY0WStx6WqU34ajq5o6ozdQrZV6GA75-dvDFC-Q8ELM1_eIJXPamxUH7PFxKyRAcxcZUl3eYZpEvvlAHW3wLHIpAiP.g9cDZe8FTmwjJJcla73KGjewdR6UDRoRNgy6T4-b7DI&dib_tag=se&keywords=dual+shaft+2+Sets+DC+Gearbox+Motor+200RPM+Yellow+TT+Motor+1%3A48+%2B+Plastic+Wheel+%28Yellow+TT+Motor+%2B+Wheel%29&qid=1786979330&s=industrial&sprefix=dual+shaft+2+sets+dc+gearbox+motor+200rpm+yellow+tt+motor+1+48+%2B+plastic+wheel+yellow+tt+motor+%2B+wheel+%2Cindustrial%2C295&sr=1-1
+,,,,,,,
 Mechanical,1,Chassis / Frame (custom),,,,Onshape CAD; STEP in hardware/cad/step/,
 ,,,,,,,
 ,,,,,,,
