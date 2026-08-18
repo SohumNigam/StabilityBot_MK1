@@ -166,3 +166,22 @@ Im trying to design the PCB and CAD in paralel to make sure the overall robot is
 
 
 **Total timespent: 1 hour 40 min**
+
+
+# Aug 18: Finalized the PCB!
+
+After triple checking the schematic I polished and cleaned up the PCB layout and it is now ready to order.
+
+I think it looks great!
+
+![alt text](Assets/image-17.png)
+
+Im planning to order it in black to lean into the liquorice theme. Maybe I'll print it with red accents as well I feel like that could look really cool.
+
+I also spent some time working on my readme and BOM to make sure it meets the review requirments.
+
+The BOM only is missing passive components now which will be added soon as I already have them added to my LCSC cart.
+
+Next I need to review the encoder PCB and finally order everything.
+
+**Total timespent: 1 hour 20 min**
