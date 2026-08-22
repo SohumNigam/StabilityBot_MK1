@@ -165,7 +165,7 @@ I had to do this without having any of the parts on hand so I also had to spend 
 Im trying to design the PCB and CAD in paralel to make sure the overall robot is as well put together as possible.
 
 
-**Total timespent: 2 hours**
+**Total time spent: 2 hours**
 
 
 # Aug 18: Finalized the PCB!
@@ -184,4 +184,12 @@ The BOM only is missing passive components now which will be added soon as I alr
 
 Next I need to review the encoder PCB and finally order everything.
 
-**Total timespent: 1 hours**
+**Total time spent: 1 hours**
+
+# Aug 22: Ordered PCBs and almost finished BOM
+
+I ordered both the main PCB board and encoder PCB in black and red respectivley to lean into the Liquorice theme. Honestly I dont think it will look that good but we will have to see
+
+![alt text](Assets/image-18.png)
+
+**Total time spent: 1 hours**
